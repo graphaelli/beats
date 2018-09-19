@@ -218,7 +218,9 @@ func (t *Template) Generate(properties common.MapStr, dynamicTemplates []common.
 	indexSettings.DeepUpdate(t.config.Settings.Index)
 
 	var mappingName string
-	if t.esVersion.Major >= 6 {
+	if t.esVersion.Major >= 7 {
+		mappingName = "_doc"
+	} else if t.esVersion.Major >= 6 {
 		mappingName = "doc"
 	} else {
 		mappingName = "_default_"
