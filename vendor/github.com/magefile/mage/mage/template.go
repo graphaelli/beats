@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -20,11 +21,12 @@ func main() {
 	// These functions are local variables to avoid name conflicts with 
 	// magefiles.
 	list := func() error {
+		{{with .Description}}fmt.Println(` + "`{{.}}\n`" + `){{end}}
 		{{- $default := .Default}}
 		w := tabwriter.NewWriter(os.Stdout, 0, 4, 4, ' ', 0)
 		fmt.Println("Targets:")
 		{{- range .Funcs}}
-		fmt.Fprintln(w, "  {{lowerfirst .Name}}{{if eq .Name $default}}*{{end}}\t" + {{printf "%q" .Synopsis}})
+		fmt.Fprintln(w, "  {{lowerfirst .TemplateName}}{{if eq .Name $default}}*{{end}}\t" + {{printf "%q" .Synopsis}})
 		{{- end}}
 		err := w.Flush()
 		{{- if .Default}}
@@ -115,7 +117,7 @@ func main() {
 	targets := map[string]bool {
 		{{range $alias, $funci := .Aliases}}"{{lower $alias}}": true,
 		{{end}}
-		{{range .Funcs}}"{{lower .Name}}": true,
+		{{range .Funcs}}"{{lower .TemplateName}}": true,
 		{{end}}
 	}
 
@@ -140,9 +142,12 @@ func main() {
 			os.Exit(1)
 		}
 		switch strings.ToLower(os.Args[1]) {
-			{{range .Funcs}}case "{{lower .Name}}":
-				fmt.Print("mage {{lower .Name}}:\n\n")
-				{{if ne .Comment ""}}fmt.Println({{printf "%q" .Comment}}){{end}}
+			{{range .Funcs}}case "{{lower .TemplateName}}":
+				fmt.Print("mage {{lower .TemplateName}}:\n\n")
+				{{if ne .Comment "" -}}
+				fmt.Println({{printf "%q" .Comment}})
+				fmt.Println()
+				{{end}}
 				var aliases []string
 				{{- $name := .Name -}}
 				{{range $alias, $func := $.Aliases}}
@@ -158,9 +163,18 @@ func main() {
 				os.Exit(1)
 		}	
 	}
-
+	// to avoid unused import
+	_ = strconv.ParseBool
 	if len(os.Args) < 2 {
 	{{- if .Default}}
+		ignore, _ := strconv.ParseBool(os.Getenv("MAGEFILE_IGNOREDEFAULT"))
+		if ignore {
+			if err := list(); err != nil {
+				logger.Println("Error:", err)
+				os.Exit(1)
+			}
+			return	
+		}
 		{{.DefaultFunc.TemplateString}}
 		handleError(logger, err)
 		return
@@ -181,9 +195,9 @@ func main() {
 		}
 		switch strings.ToLower(target) {
 		{{range .Funcs }}
-		case "{{lower .Name}}":
+		case "{{lower .TemplateName}}":
 			if os.Getenv("MAGEFILE_VERBOSE") != "" {
-				logger.Println("Running target:", "{{.Name}}")
+				logger.Println("Running target:", "{{.TemplateName}}")
 			}
 			{{.TemplateString}}
 			handleError(logger, err)
