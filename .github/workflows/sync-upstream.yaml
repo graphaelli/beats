@@ -1,0 +1,32 @@
+name: Sync Upstream
+on:
+  workflow_dispatch:
+
+jobs:
+  merge_upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: fetch and push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM: https://github.com/elastic/beats
+          UPSTREAM_BRANCH: main
+          TARGET_BRANCH: sync-main
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
+
+          git remote add upstream "${UPSTREAM}"
+
+          # Get all recent branches and commits from the upstream
+          git fetch upstream "${UPSTREAM_BRANCH}"
+
+          git merge "upstream/${UPSTREAM_BRANCH}" --ff-only || { echo "Merge conflicts detected. Please resolve them manually."; exit 1; }
+
+          git push origin "${TARGET_BRANCH}"
