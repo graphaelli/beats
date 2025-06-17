@@ -24,8 +24,9 @@ jobs:
 
           git remote add upstream "${UPSTREAM}"
 
-          # Get all recent branches and commits from the upstream
           git fetch upstream "${UPSTREAM_BRANCH}"
+
+          git checkout -b "${TARGET_BRANCH}" || git checkout "${TARGET_BRANCH}"
 
           git merge "upstream/${UPSTREAM_BRANCH}" --ff-only || { echo "Merge conflicts detected. Please resolve them manually."; exit 1; }
 
