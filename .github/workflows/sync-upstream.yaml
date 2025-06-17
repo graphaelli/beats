@@ -1,6 +1,8 @@
 name: Sync Upstream
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
 
 jobs:
   merge_upstream:
